@@ -3,7 +3,7 @@ dondevoto
 
 **dondevoto** es un intento de construir un mapa de los locales de votación para las Primarias Abiertas Simultáneas y Obligatorias (PASO) para el año 2013. El sitio [padron.gob.ar](http://www.padron.gob.ar) muestra la ubicación de los locales de votación una vez realizada una consulta. Esto indica que alguna dependencia estatal tiene una base de datos como la que estamos intentando construir, pero no hemos podido encontrarla y nada indica que haya sido publicada. Si ese mapa en efecto existe y es público, avisen así no trabajamos de más.
 
-La [Dirección Nacional Electoral](http://www.elecciones.gov.ar/default.htm) publicó un [listado de los locales de votación](http://www.elecciones.gov.ar/notificaciones/listado_establecimientos_PASO_2013.pdf). En formato PDF, como no podía ser de otra manera (_¿cuándo van a entender que NO hay que usar PDF para publicar datos?_).
+La [Dirección Nacional Electoral](http://www.elecciones.gov.ar/default.htm) publicó un [listado de los locales de votación](http://www.elecciones.gov.ar/notificaciones/listado_establecimientos_PASO_2013.pdf). En formato PDF, como no podía ser de otra manera _(¿cuándo van a entender que NO hay que usar PDF para publicar datos?)_.
 
 Procesamos ese archivo con [Tabula](http://tabula.nerdpower.org) para convertirlo a un formato usable. Tabula todavía no es perfecto y hubo que acomodar un poco su output, pero nada del otro mundo. En pocos minutos logramos un conjunto de datos _sano_, que contiene toda la información antes atrapada en PDF.
 
@@ -74,5 +74,7 @@ Es probable que la información la que contamos hasta ahora contenga bastantes p
 ## Tanto laburo para qué?
 
 Contar con un mapa completo de locales de votación puede servir, en el futuro, para varias cosas. Una de ellas: visualización de resultados electorales a gran resolución (nivel circuito electoral).
+
+Y por otro lado, por que sí.
 
 Entonces, si tenés ganas de ver qué sale, contactame: [@manuelaristaran](http://twitter.com/manuelaristaran) en Twitter o a mi mail, que figura en [jazzido.com](http://jazzido.com)
