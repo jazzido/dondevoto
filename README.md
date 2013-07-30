@@ -28,7 +28,7 @@ El sitio contiene un [mapa con la ubicación _precisa_ de todos los establecimie
 
 Esas imágenes no pueden darnos la información que necesitamos (datos de las escuelas y su ubicación geográfica). Miramos un poco más de cerca y "descubrimos" que ese mismo GeoServer también expone un servicio [Web Feature Service](http://docs.geoserver.org/latest/en/user/services/wfs/) (WFS). Bingo.
 
-Los _layers_ en WFS contienen datos vectoriales, es decir, _geometrías_ con atributos. Vimos que el _layer_ que contiene los datos que necesitamos están en el layer `men:escuelas_oferta` y los transferimos a un Shapefile con [`ogr2ogr`](https://www.google.com.ar/search?q=ogr2ogr&oq=ogr2ogr&aqs=chrome.0.69i57j69i59l3j69i61l2.1638j0&sourceid=chrome&ie=UTF-8), parte del proyecto [GDAL](http://www.gdal.org/):
+Los _layers_ en WFS contienen datos vectoriales, es decir, _geometrías_ con atributos. Vimos que el _layer_ que contiene los datos que necesitamos es `men:escuelas_oferta` y los transferimos a un Shapefile con [`ogr2ogr`](https://www.google.com.ar/search?q=ogr2ogr&oq=ogr2ogr&aqs=chrome.0.69i57j69i59l3j69i61l2.1638j0&sourceid=chrome&ie=UTF-8), parte del proyecto [GDAL](http://www.gdal.org/):
 
 ```bash
 for i in `seq 1 1000 60000`;
