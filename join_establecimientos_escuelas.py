@@ -75,21 +75,6 @@ dine_estab = db['establecimientos']
 escuelas = db['escuelasutf8']
 weighted_matches = db['weighted_matches']
 
-@memoize
-def all_escuelas():
-    list(escuelas)
-
-@memoize
-def escuelas_provincia(provincia):
-    """ Listado de escuelas por provincia
-        provincia: nombre pcia segun escuelasutf8 """
-    return list(db.query(escuelas.table.select(escuelas.table.c.provincia == provincia)))
-
-@memoize
-def escuelas_string_match(provincia, match_in):
-    return set([canon("%(ndomiciio)s%(localidad)s" % e)
-                for e in match_in])
-
 
 @memoize
 def escuelas_in_distrito(dne_seccion_id, dne_distrito_id):
