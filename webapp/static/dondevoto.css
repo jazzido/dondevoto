@@ -2,18 +2,37 @@ body {
   font-family: Helvetica, sans-serif;
 }
 
+label[for=distrito] {
+  font-weight: bold;
+  position: fixed;
+  top: 8px;
+
+}
 select#distrito {
   display: block;
+  position: fixed;
+  top: 6px;
+  left: 70px;
 }
+
+#map-container {
+  width: 50%;
+  left: 0;
+  position: fixed;
+  top: 30px;
+  left: 10px;
+}
+
 #map {
   height: 600px;
-  width: 50%;
-  float: left;
 }
 
 table#establecimientos {
   width: 50%;
   font-size: 0.8em;
+  position: relative;
+  left: 51%;
+  top: 0px;
 }
 
 table#establecimientos:hover {

@@ -9,16 +9,19 @@
 </head>
 <body>
   <div id="container">
+    <label for="distrito">Distrito:</label>
     <select id="distrito">
       {% for p, ds in provincias_distritos.iteritems() %}
       <optgroup label="{{ p.1|e }}">
-        {% for id, d in ds %}
-        <option value="{{p.0}}-{{id}}">{{d}} ({{id}})</option>
+        {% for id, d, count in ds %}
+        <option value="{{p.0}}-{{id}}">{{d}} ({{count}})</option>
         {% endfor %}
       </optgroup>
       {% endfor %}
     </select>
-    <div id="map">
+    <div id="map-container">
+      <div id="map">
+      </div>
     </div>
     <table id="establecimientos">
     </table>
@@ -50,7 +53,8 @@
         map = new GMaps({
             div: '#map',
             lat: -12.043333,
-            lng: -77.028333
+            lng: -77.028333,
+            mapType: google.maps.MapTypeId.HYBRID
         });
 
         var table_tmpl = _.template($('#establecimientos-template')[0].innerHTML);

@@ -31,12 +31,15 @@ def provincias_distritos():
     """ mapa distrito -> [seccion, ..., seccion] """
 
     rv = OrderedDict()
-    for d in db.query(""" select * from divisiones_administrativas
+    for d in db.query(""" select da.dne_distrito_id, da.provincia, da.dne_seccion_id, da.departamento, count(e.*) as estab_count from divisiones_administrativas da
+                          inner join establecimientos e
+                          on e.dne_distrito_id = da.dne_distrito_id and e.dne_seccion_id = da.dne_seccion_id
+                          group by da.dne_distrito_id, da.provincia, da.dne_seccion_id, da.departamento
                           order by provincia, departamento """):
         k = (d['dne_distrito_id'], d['provincia'],)
         if k not in rv:
             rv[k] = []
-        rv[k].append((d['dne_seccion_id'], d['departamento']))
+        rv[k].append((d['dne_seccion_id'], d['departamento'], d['estab_count']))
 
     return rv
 
@@ -47,7 +50,7 @@ def index():
 
 @app.route("/seccion/<int:distrito_id>/<int:seccion_id>")
 def seccion_info(distrito_id, seccion_id):
-    q = """ select *, st_asgeojson(wkb_geometry) as geojson, st_asgeojson(st_envelope(wkb_geometry)) as bounds
+    q = """ select *, st_asgeojson(st_setsrid(wkb_geometry, 900913)) as geojson, st_asgeojson(st_envelope(wkb_geometry)) as bounds
             from divisiones_administrativas
             where dne_distrito_id = %d and dne_seccion_id = %d """ % (distrito_id, seccion_id)
 
