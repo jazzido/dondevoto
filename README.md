@@ -3,7 +3,7 @@ dondevoto
 
 **dondevoto** es un intento de construir un mapa de los locales de votación para las Primarias Abiertas Simultáneas y Obligatorias (PASO) para el año 2013. El sitio [padron.gob.ar](http://www.padron.gob.ar) muestra la ubicación de los locales de votación una vez realizada una consulta. Esto indica que alguna dependencia estatal tiene una base de datos como la que estamos intentando construir, pero no hemos podido encontrarla y nada indica que haya sido publicada. Si ese mapa en efecto existe y es público, avisen así no trabajamos de más.
 
-La [Dirección Nacional Electoral](http://www.elecciones.gov.ar/default.htm) publicó un [listado de los locales de votación](http://www.elecciones.gov.ar/notificaciones/listado_establecimientos_PASO_2013.pdf). En formato PDF, como no podía ser de otra manera (_¿cuándo van a entender que NO hay que usar PDF para publicar datos?_).
+La [Dirección Nacional Electoral](http://www.elecciones.gov.ar/default.htm) publicó un [listado de los locales de votación](http://www.elecciones.gov.ar/notificaciones/listado_establecimientos_PASO_2013.pdf). En formato PDF, como no podía ser de otra manera _(¿cuándo van a entender que NO hay que usar PDF para publicar datos?)_.
 
 Procesamos ese archivo con [Tabula](http://tabula.nerdpower.org) para convertirlo a un formato usable. Tabula todavía no es perfecto y hubo que acomodar un poco su output, pero nada del otro mundo. En pocos minutos logramos un conjunto de datos _sano_, que contiene toda la información antes atrapada en PDF.
 
@@ -28,7 +28,7 @@ El sitio contiene un [mapa con la ubicación _precisa_ de todos los establecimie
 
 Esas imágenes no pueden darnos la información que necesitamos (datos de las escuelas y su ubicación geográfica). Miramos un poco más de cerca y "descubrimos" que ese mismo GeoServer también expone un servicio [Web Feature Service](http://docs.geoserver.org/latest/en/user/services/wfs/) (WFS). Bingo.
 
-Los _layers_ en WFS contienen datos vectoriales, es decir, _geometrías_ con atributos. Vimos que el _layer_ que contiene los datos que necesitamos están en el layer `men:escuelas_oferta` y los transferimos a un Shapefile con [`ogr2ogr`](https://www.google.com.ar/search?q=ogr2ogr&oq=ogr2ogr&aqs=chrome.0.69i57j69i59l3j69i61l2.1638j0&sourceid=chrome&ie=UTF-8), parte del proyecto [GDAL](http://www.gdal.org/):
+Los _layers_ en WFS contienen datos vectoriales, es decir, _geometrías_ con atributos. Vimos que el _layer_ que contiene los datos que necesitamos es `men:escuelas_oferta` y los transferimos a un Shapefile con [`ogr2ogr`](https://www.google.com.ar/search?q=ogr2ogr&oq=ogr2ogr&aqs=chrome.0.69i57j69i59l3j69i61l2.1638j0&sourceid=chrome&ie=UTF-8), parte del proyecto [GDAL](http://www.gdal.org/):
 
 ```bash
 for i in `seq 1 1000 60000`;
@@ -74,5 +74,7 @@ Es probable que la información la que contamos hasta ahora contenga bastantes p
 ## Tanto laburo para qué?
 
 Contar con un mapa completo de locales de votación puede servir, en el futuro, para varias cosas. Una de ellas: visualización de resultados electorales a gran resolución (nivel circuito electoral).
+
+Y por otro lado, por que sí.
 
 Entonces, si tenés ganas de ver qué sale, contactame: [@manuelaristaran](http://twitter.com/manuelaristaran) en Twitter o a mi mail, que figura en [jazzido.com](http://jazzido.com)

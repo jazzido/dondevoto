@@ -75,29 +75,6 @@ dine_estab = db['establecimientos']
 escuelas = db['escuelasutf8']
 weighted_matches = db['weighted_matches']
 
-@memoize
-def all_escuelas():
-    list(escuelas)
-
-@memoize
-def escuelas_provincia(provincia):
-    """ Listado de escuelas por provincia
-        provincia: nombre pcia segun escuelasutf8 """
-    return list(db.query(escuelas.table.select(escuelas.table.c.provincia == provincia)))
-
-@memoize
-def escuelas_string_match(provincia, match_in):
-    return set([canon("%(ndomiciio)s%(localidad)s" % e)
-                for e in match_in])
-
-@memoize
-def escuelas_in_codigo_postal(codigo_postal):
-   # q obtiene todas las escuelas dentro de `codigo_postal`
-    q = """ select e.* from escuelasutf8 e, cp_geometries
-            where cp_geometries.cp = '%s'
-            and st_within(wkb_geometry_4326, cp_geometries.geom)
-    """ % (codigo_postal)
-    return [escuela for escuela in db.query(q)]
 
 @memoize
 def escuelas_in_distrito(dne_seccion_id, dne_distrito_id):
@@ -120,7 +97,6 @@ def canon(s):
 
 persist_queue = Queue.Queue()
 def match_persister():
-#    d = csv.DictWriter(sys.stdout, ['establecimiento_id', 'escuela_id', 'score'])
     while True:
         establecimiento, matches = persist_queue.get()
         for m in matches:
@@ -171,71 +147,6 @@ def do_match():
 
         persist_queue.put((e, matches))
 
-
-def _do_match():
-    total_establecimientos = len(dine_estab)
-    log('TOTAL: %s' % total_establecimientos)
-    match_count = 0
-    current_item = 0
-    current_time = datetime.now()
-
-    # # e == centro de votacion de la lista de DINE
-#    for e in dine_estab:
-    for e in db.query(dine_estab.table.select(dine_estab.table.c.id > 135)):
-        match_in = []
-        canon_func = None
-
-        matches = []
-        coeff = 1
-
-        if current_item % 300 == 0:
-            log('processing item %i/%i (+%s seconds)' % (current_item, total_establecimientos, (datetime.now() - current_time).seconds))
-            current_time = datetime.now()
-
-        current_item += 1
-
-        if e['codigo_postal'] != '':
-            # si tengo codigo postal, restringir el espacio de busqueda
-
-            canon_func = lambda est: canon("%(nombre)s%(ndomiciio)s") % { str(k):v for k,v in est.iteritems() }
-            match_in = { canon_func(i): i for i in escuelas_in_codigo_postal(e['codigo_postal']) }
-
-            _matches = get_close_matches_with_score(canon_func({'nombre': e[u'establecimiento'],
-                                                                'ndomiciio': e[u'direccion']}),
-                                                    match_in.keys(),
-                                                    5)
-
-            matches += [(score * coeff, match_in[result]) for score, result in _matches]
-
-        if e['distrito'] != '':
-            # no tengo codigo postal, usar la provincia
-
-            coeff = 0.5
-            canon_func = lambda est: canon("%(nombre)s%(ndomiciio)s%(localidad)s") % { str(k):v for k,v in est.iteritems() }
-            match_in = { canon_func(i): i
-                         for i in escuelas_provincia(establecimientos_escuelas[e['distrito']]) }
-
-            _matches = get_close_matches_with_score(canon_func({'nombre': e[u'establecimiento'],
-                                                                'ndomiciio': e[u'direccion'],
-                                                                'localidad': e[u'localidad']}),
-                                                    match_in.keys(),
-                                                    5)
-
-            matches += [(score * coeff, match_in[result])
-                        for score, result in _matches
-                        if result not in [m[1] for m in matches]]
-
-        else:
-            # ni provincia tengo, buscar en todo el espacio
-            match_in = all_escuelas()
-            canon_func = lambda est: "%(establecimiento)s%(direccion)s%(localidad)s" % est
-
-        if matches > 0:
-            match_count += 1
-
-        persist_queue.put((e, matches))
-
-    log('matches: %s' % match_count)
 
 if __name__ == '__main__':
     t_main = threading.Thread(target=do_match)
