@@ -20,10 +20,29 @@
     </select>
     <div id="map">
     </div>
+    <table id="establecimientos">
+    </table>
   </div>
 
   <script type="text/template" id="establecimientos-template">
-
+      <thead>
+        <tr>
+          <th>Establecimiento</th>
+          <th>Dirección</th>
+          <th>Localidad</th>
+          <th>Circuito</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% _.each(establecimientos, function(e) { console.log(e);%>
+        <tr data-establecimiento-id="<%- e.id %>">
+          <td><%- e.establecimiento %></td>
+          <td><%- e.direccion %></td>
+          <td><%- e.localidad %></td>
+          <td><%- e.circuito %></td>
+        </tr>
+        <% }); %>
+      </tbody>
   </script>
 
   <script type="text/javascript">
@@ -34,10 +53,69 @@
             lng: -77.028333
         });
 
+        var table_tmpl = _.template($('#establecimientos-template')[0].innerHTML);
+        var polygon = null;
+        var markers = [];
+
         $('select#distrito').on('change', function() {
             var p_d = $(this).val().split('-');
-            $.get('/establecimientos/' + p_d.join('/'));
+            $.get('/establecimientos/' + p_d.join('/'),
+                 function(data) {
+
+                     $('table#establecimientos')
+                          .html(table_tmpl({establecimientos: data }));
+                 });
+
+            map.removeMarkers(markers);
+            markers = []
+
+            $.get('/seccion/' + p_d.join('/'), function(data) {
+                map.fitLatLngBounds(data.bounds.coordinates[0].map(function(p) {
+                    return new google.maps.LatLng(p[1], p[0]);
+                }));
+
+                if (polygon != null) map.removePolygon(polygon);
+
+                polygon = map.drawPolygon({
+                    paths: data.geojson.coordinates,
+                    useGeoJSON: true,
+                    strokeOpacity: 0.4,
+                    strokeWeight: 1,
+                    strokeColor: '#ff0000',
+                    fillColor: '#BBD8E9',
+                    fillOpacity: 0.4
+                });
+            });
         });
+
+        var showMarker = function(e) {
+            console.log(e);
+        };
+
+        $(document).on(
+            {
+                'click': function() {
+                    var eid = $(this).data('establecimiento-id');
+                    $.get('/matches/' + eid,
+                          function(data) {
+                              map.removeMarkers(markers);
+                              markers = []
+                              data.forEach(function(m) {
+                                  var marker = map.addMarker({
+                                      lat: m.geojson.coordinates[1],
+                                      lng: m.geojson.coordinates[0],
+                                      details: m,
+                                      infoWindow: {
+                                          content: m.nombre
+                                      },
+                                      click: showMarker,
+                                  });
+                                  markers.push(marker);
+                              });
+                              if (markers.length > 0) map.fitZoom();
+                          });
+                }
+            }, 'table#establecimientos tr');
 
     });
   </script>

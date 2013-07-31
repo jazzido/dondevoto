@@ -1,4 +1,35 @@
-#map {
-  height: 400px;
-  width: 400px;
+body {
+  font-family: Helvetica, sans-serif;
 }
+
+select#distrito {
+  display: block;
+}
+#map {
+  height: 600px;
+  width: 50%;
+  float: left;
+}
+
+table#establecimientos {
+  width: 50%;
+  font-size: 0.8em;
+}
+
+table#establecimientos:hover {
+  cursor: pointer;
+}
+
+  table#establecimientos tbody {
+    
+  }
+
+  table#establecimientos thead {
+    text-align: left;
+    font-weight: bold;
+    background-color: #ddd;
+  }
+
+  table#establecimientos tr {
+    height: 20px;
+  }

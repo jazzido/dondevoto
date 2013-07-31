@@ -45,6 +45,19 @@ def index():
     return render_template('index.html',
                            provincias_distritos=provincias_distritos())
 
+@app.route("/seccion/<int:distrito_id>/<int:seccion_id>")
+def seccion_info(distrito_id, seccion_id):
+    q = """ select *, st_asgeojson(wkb_geometry) as geojson, st_asgeojson(st_envelope(wkb_geometry)) as bounds
+            from divisiones_administrativas
+            where dne_distrito_id = %d and dne_seccion_id = %d """ % (distrito_id, seccion_id)
+
+    r = [dict(e.items() + [('geojson',simplejson.loads(e['geojson'])),('wkb_geometry', ''), ('bounds',simplejson.loads(e['bounds']))])
+         for e in db.query(q)][0]
+
+    return flask.Response(flask.json.dumps(r),
+                          mimetype='application/json')
+
+
 @app.route("/establecimientos/<int:distrito_id>/<int:seccion_id>")
 def establecimientos_by_distrito_and_seccion(distrito_id, seccion_id):
     q = """ select * from establecimientos
@@ -55,6 +68,8 @@ def establecimientos_by_distrito_and_seccion(distrito_id, seccion_id):
 
 @app.route("/matches/<int:establecimiento_id>", methods=['GET'])
 def matched_escuelas(establecimiento_id):
+    """ obtener los matches para un establecimiento """
+
     q = """ select wm.score, wm.establecimiento_id, esc.*, st_asgeojson(wkb_geometry_4326) as geojson
             from weighted_matches wm
             inner join establecimientos e on e.id = wm.establecimiento_id
