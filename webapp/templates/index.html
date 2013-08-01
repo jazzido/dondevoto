@@ -52,10 +52,11 @@
 
   <script type="text/template" id="matches-template">
     <tr class="matches">
-      <td colspan="4">
+      <td colspan="5">
       <table>
         <% _.each(matches, function(e) {  %>
         <tr>
+          <td><input type="checkbox" <% if (e.is_match == 1) { %>checked="checked"<% } %>></td>
           <td><%- e.nombre %></td>
           <td><%- e.ndomiciio %></td>
           <td><%- e.localidad %></td>
@@ -65,6 +66,16 @@
       </table>
       </td>
     </tr>
+  </script>
+
+  <script type="text/template" id="infowindow-template">
+    <div style="font-size: 0.7em">
+      <strong><%- place.nombre %></strong><br>
+      <span style="font-size: 0.9em">
+        Dirección: <%- place.ndomiciio %> — Localidad: <%- place.localidad %><br>
+        <%- place.provincia %>
+      </span>
+    </div>
   </script>
 
   <script type="text/javascript">
