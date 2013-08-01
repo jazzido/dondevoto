@@ -2,6 +2,18 @@ body {
   font-family: Helvetica, sans-serif;
 }
 
+#loading {
+  background-color: yellow;
+  padding: 5px;
+  width: 9%;
+  height: 15px;
+  position: absolute;
+  left: 91%;
+  top: 0;
+  visibility: hidden;
+  z-index: 42;
+}
+
 label[for=distrito] {
   font-weight: bold;
   position: fixed;
@@ -43,6 +55,11 @@ table#establecimientos tr.establecimiento:hover {
     background-color: #eee;
   }
 
+  table#establecimientos tbody tr.matched {
+    background-color: lightgreen;
+  }
+
+
   table#establecimientos thead {
     text-align: left;
     font-weight: bold;
@@ -52,6 +69,7 @@ table#establecimientos tr.establecimiento:hover {
   table#establecimientos tr {
     height: 20px;
   }
+
 
 tr.matches {
   font-size: 0.5em;

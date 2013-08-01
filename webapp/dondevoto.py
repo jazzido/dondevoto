@@ -9,6 +9,11 @@ from werkzeug import Request
 
 # Umbral para considerar válidas a los matches calculados por el algoritmo
 MATCH_THRESHOLD = 0.9
+DELETE_MATCHES_QUERY = """ DELETE
+                           FROM weighted_matches
+                           WHERE establecimiento_id = %d
+                             AND escuela_id = %d
+                             AND match_source = 1 """
 
 class MethodRewriteMiddleware(object):
     def __init__(self, app, input_name='_method'):
@@ -17,7 +22,6 @@ class MethodRewriteMiddleware(object):
 
     def __call__(self, environ, start_response):
         request = Request(environ)
-
         if self.input_name in request.form:
             method = request.form[self.input_name].upper()
 
@@ -35,15 +39,34 @@ def provincias_distritos():
     """ mapa distrito -> [seccion, ..., seccion] """
 
     rv = OrderedDict()
-    for d in db.query(""" select da.dne_distrito_id, da.provincia, da.dne_seccion_id, da.departamento, count(e.*) as estab_count from divisiones_administrativas da
-                          inner join establecimientos e
-                          on e.dne_distrito_id = da.dne_distrito_id and e.dne_seccion_id = da.dne_seccion_id
-                          group by da.dne_distrito_id, da.provincia, da.dne_seccion_id, da.departamento
-                          order by provincia, departamento """):
+    q = """
+            SELECT da.dne_distrito_id,
+                   da.provincia,
+                   da.dne_seccion_id,
+                   da.departamento,
+                   count(e.*) AS estab_count,
+                   count(wm.*) AS matches_count
+            FROM divisiones_administrativas da
+            INNER JOIN establecimientos e
+               ON e.dne_distrito_id = da.dne_distrito_id
+               AND e.dne_seccion_id = da.dne_seccion_id
+            LEFT OUTER JOIN weighted_matches wm
+               ON wm.establecimiento_id = e.id AND wm.score = 1
+            GROUP BY da.dne_distrito_id,
+                     da.provincia,
+                     da.dne_seccion_id,
+                     da.departamento
+            ORDER BY provincia,
+                     departamento
+        """
+    for d in db.query(q):
         k = (d['dne_distrito_id'], d['provincia'],)
         if k not in rv:
             rv[k] = []
-        rv[k].append((d['dne_seccion_id'], d['departamento'], d['estab_count']))
+        rv[k].append((d['dne_seccion_id'],
+                      d['departamento'],
+                      d['estab_count'],
+                      d['matches_count']))
 
     return rv
 
@@ -67,8 +90,13 @@ def seccion_info(distrito_id, seccion_id):
 
 @app.route("/establecimientos/<int:distrito_id>/<int:seccion_id>")
 def establecimientos_by_distrito_and_seccion(distrito_id, seccion_id):
-    q = """ select * from establecimientos
-            where dne_distrito_id = %d and dne_seccion_id = %d """ % (distrito_id, seccion_id)
+    q = """ SELECT e.id, e.establecimiento, e.localidad, e.circuito, count(wm.*) AS match_count
+            FROM establecimientos e
+            LEFT OUTER JOIN weighted_matches wm
+               ON wm.establecimiento_id = e.id AND wm.score = 1
+            WHERE dne_distrito_id = %d
+              AND dne_seccion_id = %d
+            GROUP BY  e.id, e.establecimiento, e.localidad, e.circuito """ % (distrito_id, seccion_id)
 
     return flask.Response(flask.json.dumps(list(db.query(q))),
                           mimetype='application/json')
@@ -78,6 +106,7 @@ def establecimientos_by_distrito_and_seccion(distrito_id, seccion_id):
 @app.route("/matches/<int:establecimiento_id>", methods=['GET'])
 def matched_escuelas(establecimiento_id):
     """ obtener los matches para un establecimiento """
+
 
     q = """
        SELECT wm.score,
@@ -102,11 +131,16 @@ def matched_escuelas(establecimiento_id):
     return flask.Response(flask.json.dumps(r),
                           mimetype='application/json')
 
-@app.route('/matches/<int:establecimiento_id>/<int:escuela_id>/<int:match_id>',
-           methods=['PUT'])
-def match_modify(establecimiento_id, escuela_id, match_id):
-    """ modificar un weighted_match """
-    pass
+@app.route('/matches/<int:establecimiento_id>/<int:place_id>',
+           methods=['DELETE'])
+def match_delete(establecimiento_id, place_id):
+    """ modificar los weighted_matches para un (establecimiento, escuela) """
+    # borrar todos los matches humanos anteriores
+    print 'DELETE'
+    q = DELETE_MATCHES_QUERY % (establecimiento_id, place_id)
+    db.query(q)
+    return flask.Response('')
+
 
 @app.route('/matches/<int:establecimiento_id>/<int:place_id>', methods=['POST'])
 def match_create(establecimiento_id, place_id):
@@ -127,11 +161,7 @@ def match_create(establecimiento_id, place_id):
 
     # crear un match para un (establecimiento, escuela) implica
     # borrar todos los matches humanos anteriores
-    q = """ DELETE
-            FROM weighted_matches
-            WHERE establecimiento_id = %d
-              AND escuela_id = %d
-              AND match_source = 1 """ % (establecimiento_id, place_id)
+    q = DELETE_MATCHES_QUERY % (establecimiento_id, place_id)
     db.query(q)
 
     db['weighted_matches'].insert({
@@ -142,8 +172,3 @@ def match_create(establecimiento_id, place_id):
     })
 
     return flask.Response('')
-
-
-if __name__ == "__main__":
-    app.debug = True
-    app.run()

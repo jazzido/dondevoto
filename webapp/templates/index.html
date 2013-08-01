@@ -10,13 +10,16 @@
   <title>dondevoto</title>
 </head>
 <body>
+  <div id="loading">
+    Cargando...
+  </div>
   <div id="container">
     <label for="distrito">Distrito:</label>
     <select id="distrito">
       {% for p, ds in provincias_distritos.iteritems() %}
       <optgroup label="{{ p.1|e }}">
-        {% for id, d, count in ds %}
-        <option value="{{p.0}}-{{id}}">{{d}} ({{count}})</option>
+        {% for id, d, estab_count, matches_count in ds %}
+        <option data-distrito="{{d}}" data-match-count="{{matches_count}}" data-estab-count="{{estab_count}}" value="{{p.0}}-{{id}}">{{d}} ({{"%.2f"|format(matches_count/estab_count * 100)}}%)</option>
         {% endfor %}
       </optgroup>
       {% endfor %}
@@ -39,8 +42,8 @@
         </tr>
       </thead>
       <tbody>
-        <% _.each(establecimientos, function(e) { console.log(e);%>
-        <tr class="establecimiento" data-establecimiento-id="<%- e.id %>">
+        <% _.each(establecimientos, function(e) { console.log(e); %>
+        <tr class="establecimiento <% if (e.match_count >= 1) { %> matched<% } %>" data-establecimiento-id="<%- e.id %>">
           <td><%- e.establecimiento %></td>
           <td><%- e.direccion %></td>
           <td><%- e.localidad %></td>

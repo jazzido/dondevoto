@@ -71,14 +71,27 @@ $(function(){
     $(document).on({
         'change': function() {
             var chk = $(this);
-            var establecimiento = chk
+
+            var establecimiento_tr = chk
                 .parents('.matches')
-                .prev()
+                .prev();
+
+            var establecimiento = establecimiento_tr
                 .data('establecimiento-id');
+
             var place = chk
-            .parents('tr:not(.matches)').data('place');
+                .parents('tr:not(.matches)')
+                .data('place');
+
+            var url = '/matches/' + establecimiento + '/' + place.ogc_fid;
+
             if (chk.is(':checked')) {
-                $.post('/matches/' + establecimiento + '/' + place.ogc_fid);
+                establecimiento_tr.addClass('matched');
+                $.post(url);
+            }
+            else { //delete
+                establecimiento_tr.removeClass('matched');
+                $.post(url, { _method: 'delete'});
             }
         },
     }, 'tr.matches tr input[type=checkbox]')
@@ -86,7 +99,7 @@ $(function(){
 
     $(document).on(
         {
-            'click': function() {
+            'click': function() { // click en establecimiento
                 $('tr', $(this).parent()).removeClass('active');
                 $('tr.matches').remove();
                 var tr = $(this);
@@ -94,13 +107,32 @@ $(function(){
                 var eid = $(this).data('establecimiento-id');
                 $.get('/matches/' + eid,
                       function(data) {
+                          data =
+                              _.sortBy(
+                                  _.map(
+                                      _.pairs(
+                                          _.groupBy(data,
+                                                    function(d) {
+                                                        return d.ogc_fid;
+                                                    }, data)
+                                      ), function(p) {
+                                          return _.max(p[1],
+                                                       function(d) {
+                                                           return d.score;
+                                                       });
+                                      }),
+                                  function(d) {
+                                      return -d.score;
+                                  });
 
-                          if (data.length > 0) {
-                              tr.after(matches_tmpl({matches: data}));
-                              $('tr', tr.next()).each(function(i, t) {
-                                  $(this).data('place', data[i]);
-                              })
-                          }
+
+                          tr.after(matches_tmpl({matches: data}));
+                          $('tr', tr.next()).each(function(i, t) {
+                              $(this).data('place', data[i]);
+                          });
+
+                          if (_.some(data, function(d) { return d.score == 1}))
+                              tr.addClass('matched');
 
                           map.removeMarkers(markers);
                           markers = []
@@ -122,11 +154,11 @@ $(function(){
         }, 'table#establecimientos tr.establecimiento');
 
     $(document).on("ajaxStart", function(e, xhr, settings, exception)  {
-        console.log('ajaxstart');
+        $('#loading').css('visibility', 'visible');
     });
 
     $(document).on("ajaxComplete", function(e, xhr, settings, exception)  {
-        console.log('ajaxend');
+        $('#loading').css('visibility', 'hidden');
     });
 
 });
