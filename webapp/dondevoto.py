@@ -77,7 +77,7 @@ def matched_escuelas(establecimiento_id):
             from weighted_matches wm
             inner join establecimientos e on e.id = wm.establecimiento_id
             inner join escuelasutf8 esc on esc.ogc_fid = wm.escuela_id
-            where wm.establecimiento_id = %d
+            where wm.establecimiento_id = %d and esc.estado = 'Activo'
             order by wm.score desc
         """ % (establecimiento_id)
 

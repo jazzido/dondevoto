@@ -1,9 +1,11 @@
 <!doctype html>
 <head>
   <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+  <script type="text/javascript" src="static/markerclusterer.js"></script>
   <script type="text/javascript" src="static/jquery-2.0.3.js"></script>
   <script type="text/javascript" src="static/underscore-min.js"></script>
   <script type="text/javascript" src="static/gmaps.js"></script>
+  <script type="text/javascript" src="static/dondevoto.js"></script>
   <link rel="stylesheet" href="static/dondevoto.css" type="text/css" media="screen" />
   <title>dondevoto</title>
 </head>
@@ -38,7 +40,7 @@
       </thead>
       <tbody>
         <% _.each(establecimientos, function(e) { console.log(e);%>
-        <tr data-establecimiento-id="<%- e.id %>">
+        <tr class="establecimiento" data-establecimiento-id="<%- e.id %>">
           <td><%- e.establecimiento %></td>
           <td><%- e.direccion %></td>
           <td><%- e.localidad %></td>
@@ -48,80 +50,24 @@
       </tbody>
   </script>
 
+  <script type="text/template" id="matches-template">
+    <tr class="matches">
+      <td colspan="4">
+      <table>
+        <% _.each(matches, function(e) {  %>
+        <tr>
+          <td><%- e.nombre %></td>
+          <td><%- e.ndomiciio %></td>
+          <td><%- e.localidad %></td>
+          <td><%- (e.score * 100).toFixed(3) %></td>
+        </tr>
+        <% }); %>
+      </table>
+      </td>
+    </tr>
+  </script>
+
   <script type="text/javascript">
-    $(function(){
-        map = new GMaps({
-            div: '#map',
-            lat: -12.043333,
-            lng: -77.028333,
-            mapType: google.maps.MapTypeId.HYBRID
-        });
-
-        var table_tmpl = _.template($('#establecimientos-template')[0].innerHTML);
-        var polygon = null;
-        var markers = [];
-
-        $('select#distrito').on('change', function() {
-            var p_d = $(this).val().split('-');
-            $.get('/establecimientos/' + p_d.join('/'),
-                 function(data) {
-
-                     $('table#establecimientos')
-                          .html(table_tmpl({establecimientos: data }));
-                 });
-
-            map.removeMarkers(markers);
-            markers = []
-
-            $.get('/seccion/' + p_d.join('/'), function(data) {
-                map.fitLatLngBounds(data.bounds.coordinates[0].map(function(p) {
-                    return new google.maps.LatLng(p[1], p[0]);
-                }));
-
-                if (polygon != null) map.removePolygon(polygon);
-
-                polygon = map.drawPolygon({
-                    paths: data.geojson.coordinates,
-                    useGeoJSON: true,
-                    strokeOpacity: 0.4,
-                    strokeWeight: 1,
-                    strokeColor: '#ff0000',
-                    fillColor: '#BBD8E9',
-                    fillOpacity: 0.4
-                });
-            });
-        });
-
-        var showMarker = function(e) {
-            console.log(e);
-        };
-
-        $(document).on(
-            {
-                'click': function() {
-                    var eid = $(this).data('establecimiento-id');
-                    $.get('/matches/' + eid,
-                          function(data) {
-                              map.removeMarkers(markers);
-                              markers = []
-                              data.forEach(function(m) {
-                                  var marker = map.addMarker({
-                                      lat: m.geojson.coordinates[1],
-                                      lng: m.geojson.coordinates[0],
-                                      details: m,
-                                      infoWindow: {
-                                          content: m.nombre
-                                      },
-                                      click: showMarker,
-                                  });
-                                  markers.push(marker);
-                              });
-                              if (markers.length > 0) map.fitZoom();
-                          });
-                }
-            }, 'table#establecimientos tr');
-
-    });
   </script>
 
 </body>

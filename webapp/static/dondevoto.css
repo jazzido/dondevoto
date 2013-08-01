@@ -16,7 +16,7 @@ select#distrito {
 }
 
 #map-container {
-  width: 50%;
+  width: 40%;
   left: 0;
   position: fixed;
   top: 30px;
@@ -28,19 +28,19 @@ select#distrito {
 }
 
 table#establecimientos {
-  width: 50%;
+  width: 60%;
   font-size: 0.8em;
   position: relative;
-  left: 51%;
+  left: 41%;
   top: 0px;
 }
 
-table#establecimientos:hover {
+table#establecimientos tr.establecimiento:hover {
   cursor: pointer;
 }
 
-  table#establecimientos tbody {
-    
+  table#establecimientos tbody tr.active, table#establecimientos tr.establecimiento:hover {
+    background-color: #eee;
   }
 
   table#establecimientos thead {
@@ -52,3 +52,17 @@ table#establecimientos:hover {
   table#establecimientos tr {
     height: 20px;
   }
+
+tr.matches {
+  font-size: 0.5em;
+}
+
+tr.matches table {
+  width: 90% !important;
+  margin: 0 auto;
+}
+
+tr.matches tr {
+  cursor: default;
+}
+
