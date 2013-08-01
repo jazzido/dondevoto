@@ -69,7 +69,14 @@ Si llegaste hasta acá es porque te interesa el problema y quizás te interese c
   - Hay una tabla `weighted_matches`: vincula `establecimientos` (lugares de votacion) con `escuelas` (puntos en el mapa), atribuído con un grado de certeza del match (retornado por `difflib`).
   - El script `join_establecimientos_escuelas.py` es el que construye esa tabla. Si cambiás el algoritmo que la construye, truncala antes de correrlo.
 
-Es probable que la información la que contamos hasta ahora contenga bastantes pistas con las que definir reglas o heurísticas que permitan mejorar la precisión del (rudimentario) matching que venimos haciendo hasta ahora. Hay establecimientos que nunca vamos a poder referenciar con la información disponible: por ejemplo, locales de votación que _no_ son escuelas. No va a quedar otra más que trabajo manual, también son bienvenidas ideas sobre eso (aplicación para _crowdsourcear_ la validación/entrada de info?).
+Es probable que la información con la que contamos hasta ahora contenga bastantes pistas con las que definir reglas o heurísticas que permitan mejorar la precisión del (rudimentario) matching que venimos haciendo hasta ahora. Hay establecimientos que nunca vamos a poder referenciar con la información disponible: por ejemplo, locales de votación que _no_ son escuelas. No va a quedar otra más que trabajo manual, también son bienvenidas ideas sobre eso.
+
+### Visualizando los resultados
+
+En el directorio `webapp` hay una aplicación web simple para visualizar los resultados del matching. Dentro de poco va a convertirse en una aplicación para _crowdsourcear_ la validación de los resultados. Hay alrededor de 13000 locales de votación, no son tantos; si nos ponemos, los valdiamos en poco tiempo :)
+
+Para correr la aplicación, instalar [flask](http://flask.pocoo.org/) y ejecutar `python webapp/dondevoto.py`.
+
 
 ## Tanto laburo para qué?
 
