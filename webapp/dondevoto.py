@@ -45,7 +45,8 @@ def provincias_distritos():
                    da.dne_seccion_id,
                    da.departamento,
                    count(e.*) AS estab_count,
-                   count(wm.*) AS matches_count
+                   (CASE WHEN count(wm.*) >= 1 THEN 1
+                         ELSE count(wm.*) END )AS matches_count
             FROM divisiones_administrativas da
             INNER JOIN establecimientos e
                ON e.dne_distrito_id = da.dne_distrito_id
@@ -77,9 +78,12 @@ def index():
 
 @app.route("/seccion/<int:distrito_id>/<int:seccion_id>")
 def seccion_info(distrito_id, seccion_id):
-    q = """ select *, st_asgeojson(st_setsrid(wkb_geometry, 900913)) as geojson, st_asgeojson(st_envelope(wkb_geometry)) as bounds
-            from divisiones_administrativas
-            where dne_distrito_id = %d and dne_seccion_id = %d """ % (distrito_id, seccion_id)
+    q = """ SELECT *,
+                   st_asgeojson(st_setsrid(wkb_geometry, 900913)) AS geojson,
+                   st_asgeojson(st_envelope(wkb_geometry)) AS bounds
+            FROM divisiones_administrativas
+            WHERE dne_distrito_id = %d
+              AND dne_seccion_id = %d """ % (distrito_id, seccion_id)
 
     r = [dict(e.items() + [('geojson',simplejson.loads(e['geojson'])),('wkb_geometry', ''), ('bounds',simplejson.loads(e['bounds']))])
          for e in db.query(q)][0]
@@ -106,7 +110,6 @@ def establecimientos_by_distrito_and_seccion(distrito_id, seccion_id):
 @app.route("/matches/<int:establecimiento_id>", methods=['GET'])
 def matched_escuelas(establecimiento_id):
     """ obtener los matches para un establecimiento """
-
 
     q = """
        SELECT wm.score,

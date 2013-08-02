@@ -3,6 +3,7 @@
   <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
   <script type="text/javascript" src="static/markerclusterer.js"></script>
   <script type="text/javascript" src="static/jquery-2.0.3.js"></script>
+  <script type="text/javascript" src="static/jquery.sticky.js"></script>
   <script type="text/javascript" src="static/underscore-min.js"></script>
   <script type="text/javascript" src="static/gmaps.js"></script>
   <script type="text/javascript" src="static/dondevoto.js"></script>
@@ -13,18 +14,22 @@
   <div id="loading">
     Cargando...
   </div>
+  <header>
+    <h1>dondevoto</h1>
+    <h2>Construyendo un mapa de centros de votación</h2>
+  </header>
   <div id="container">
-    <label for="distrito">Distrito:</label>
-    <select id="distrito">
-      {% for p, ds in provincias_distritos.iteritems() %}
-      <optgroup label="{{ p.1|e }}">
-        {% for id, d, estab_count, matches_count in ds %}
-        <option data-distrito="{{d}}" data-match-count="{{matches_count}}" data-estab-count="{{estab_count}}" value="{{p.0}}-{{id}}">{{d}} ({{"%.2f"|format(matches_count/estab_count * 100)}}%)</option>
+    <div id="map-and-select">
+      <label for="distrito">Distrito:</label>
+      <select id="distrito">
+        {% for p, ds in provincias_distritos.iteritems() %}
+        <optgroup label="{{ p.1|e }}">
+          {% for id, d, estab_count, matches_count in ds %}
+          <option data-distrito="{{d}}" data-match-count="{{matches_count}}" data-estab-count="{{estab_count}}" value="{{p.0}}-{{id}}">{{d}} ({{"%.2f"|format(matches_count/estab_count * 100)}}%)</option>
+          {% endfor %}
+        </optgroup>
         {% endfor %}
-      </optgroup>
-      {% endfor %}
-    </select>
-    <div id="map-container">
+      </select>
       <div id="map">
       </div>
     </div>
@@ -82,6 +87,12 @@
   </script>
 
   <script type="text/javascript">
+  </script>
+
+  <script>
+  $(document).ready(function(){
+    $("header").sticky({topSpacing:10});
+  });
   </script>
 
 </body>
