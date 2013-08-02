@@ -161,7 +161,7 @@ $(function(){
             var tr = a.parents('tr.matches');
             var prev = tr.prev();
             $.get('/places/' + currentDistrito + '/' + currentSeccion,
-                  { direccion: $('td:nth-child(3)', tr).html() },
+                  { direccion: $('td:nth-child(2)', prev).html() },
                   function(data) {
                       tr.remove();
                       prev.after(matches_tmpl({

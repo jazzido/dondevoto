@@ -34,7 +34,7 @@ class MethodRewriteMiddleware(object):
 
 def authfunc(env, username, password):
     # TODO guardar username en env, para guardar el autor de los matches
-    return password == os.environ('DONDEVOTO_PASSWORD', 'dondevoto')
+    return password == os.environ.get('DONDEVOTO_PASSWORD', 'dondevoto')
 
 app = Flask(__name__)
 app.wsgi_app = basic.basic('dondevoto', authfunc)(MethodRewriteMiddleware(app.wsgi_app))
