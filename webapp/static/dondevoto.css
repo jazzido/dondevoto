@@ -26,6 +26,7 @@ header {
   position: absolute;
   visibility: hidden;
   z-index: 42;
+  left: 91%;
 }
 
 label[for=distrito] {
@@ -43,7 +44,7 @@ select#distrito {
 }
 
   #map {
-    height: 450px;
+    height: 400px;
   }
 
 
@@ -52,6 +53,17 @@ table#establecimientos {
   font-size: 0.8em;
   position: relative;
   left: 52%;
+  border: 1px solid #555;
+  padding: 0;
+  border-collapse: collapse;
+}
+
+table#establecimientos thead tr th, table#establecimientos tr td {
+  border: 1px solid #999;
+}
+
+tr.matches table, tr.matches table tr, tr.matches table td {
+  border: 0 !important;
 }
 
 table#establecimientos tr.establecimiento:hover {
@@ -91,3 +103,10 @@ tr.matches tr {
   cursor: default;
 }
 
+.pac-container {
+  width: 400px !important;
+}
+
+#provincia-ranking {
+  font-size: 0.5em;
+}

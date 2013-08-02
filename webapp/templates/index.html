@@ -1,9 +1,10 @@
 <!doctype html>
 <head>
-  <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
-  <script type="text/javascript" src="static/markerclusterer.js"></script>
+  <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false&amp;libraries=places"></script>
   <script type="text/javascript" src="static/jquery-2.0.3.js"></script>
+  <script type="text/javascript" src="static/jquery.geocomplete.min.js"></script>
   <script type="text/javascript" src="static/jquery.sticky.js"></script>
+  <script type="text/javascript" src="static/jquery.modal.min.js"></script>
   <script type="text/javascript" src="static/underscore-min.js"></script>
   <script type="text/javascript" src="static/gmaps.js"></script>
   <script type="text/javascript" src="static/dondevoto.js"></script>
@@ -32,6 +33,8 @@
       </select>
       <div id="map">
       </div>
+      <ul id="provincia-ranking">
+      </ul>
     </div>
     <table id="establecimientos">
     </table>
@@ -47,8 +50,8 @@
         </tr>
       </thead>
       <tbody>
-        <% _.each(establecimientos, function(e) { console.log(e); %>
-        <tr class="establecimiento <% if (e.match_count >= 1) { %> matched<% } %>" data-establecimiento-id="<%- e.id %>">
+        <% _.each(establecimientos, function(e) { %>
+        <tr class="establecimiento <% if (e.match_count >= 0.95) { %> matched<% } %>" data-establecimiento-id="<%- e.id %>">
           <td><%- e.establecimiento %></td>
           <td><%- e.direccion %></td>
           <td><%- e.localidad %></td>
@@ -61,17 +64,18 @@
   <script type="text/template" id="matches-template">
     <tr class="matches">
       <td colspan="5">
-      <table>
-        <% _.each(matches, function(e) {  %>
-        <tr>
-          <td><input type="checkbox" <% if (e.is_match == 1) { %>checked="checked"<% } %>></td>
-          <td><%- e.nombre %></td>
-          <td><%- e.ndomiciio %></td>
-          <td><%- e.localidad %></td>
-          <td><%- (e.score * 100).toFixed(3) %></td>
-        </tr>
-        <% }); %>
-      </table>
+        <table>
+          <% _.each(matches, function(e) {  %>
+          <tr>
+            <td><input type="checkbox" <% if (e.is_match == 1) { %>checked="checked"<% } %>></td>
+            <td><%- e.nombre %></td>
+            <td><%- e.ndomiciio %></td>
+            <td><%- e.localidad %></td>
+            <td><%- (e.score * 100).toFixed(3) %></td>
+          </tr>
+          <% }); %>
+        </table>
+        Buscar lugares: <input type="text"> o <a href="#">Ver todas las escuelas en <%- seccion %>, <%- distrito %></a>
       </td>
     </tr>
   </script>
@@ -84,6 +88,13 @@
         <%- place.provincia %>
       </span>
     </div>
+  </script>
+
+  <script type="text/template" id="completion-template">
+    <strong>¡Ya casi estamos!</strong>
+    <% _.each(provincias, function(e) { %>
+    <li><strong><%- e.provincia %></strong>: <%- ((e.matches_count / e.estab_count) * 100).toFixed(2) %>%  (<%- e.matches_count %> de <%- e.estab_count %>)</li>
+    <% }); %>
   </script>
 
   <script type="text/javascript">

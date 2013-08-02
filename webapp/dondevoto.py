@@ -6,9 +6,10 @@ import dataset
 import flask
 from flask import Flask, render_template, jsonify, abort
 from werkzeug import Request
+from wsgiauth import basic
 
 # Umbral para considerar válidas a los matches calculados por el algoritmo
-MATCH_THRESHOLD = 0.9
+MATCH_THRESHOLD = 0.95
 DELETE_MATCHES_QUERY = """ DELETE
                            FROM weighted_matches
                            WHERE establecimiento_id = %d
@@ -30,8 +31,12 @@ class MethodRewriteMiddleware(object):
 
         return self.app(environ, start_response)
 
+def authfunc(env, username, password):
+    # TODO guardar username en env, para guardar el autor de los matches
+    return password == 'dondevoto'
+
 app = Flask(__name__)
-app.wsgi_app = MethodRewriteMiddleware(app.wsgi_app)
+app.wsgi_app = basic.basic('dondevoto', authfunc)(MethodRewriteMiddleware(app.wsgi_app))
 
 db = dataset.connect('postgresql://manuel@localhost:5432/mapa_paso')
 
@@ -45,8 +50,7 @@ def provincias_distritos():
                    da.dne_seccion_id,
                    da.departamento,
                    count(e.*) AS estab_count,
-                   (CASE WHEN count(wm.*) >= 1 THEN 1
-                         ELSE count(wm.*) END )AS matches_count
+                   count(wm.*) AS matches_count
             FROM divisiones_administrativas da
             INNER JOIN establecimientos e
                ON e.dne_distrito_id = da.dne_distrito_id
@@ -76,6 +80,23 @@ def index():
     return render_template('index.html',
                            provincias_distritos=provincias_distritos())
 
+@app.route("/completion")
+def completion():
+    q = """ SELECT da.provincia,
+                   count(e.*) AS estab_count,
+                   count(wm.*) AS matches_count
+            FROM divisiones_administrativas da
+            INNER JOIN establecimientos e
+               ON e.dne_distrito_id = da.dne_distrito_id
+               AND e.dne_seccion_id = da.dne_seccion_id
+            LEFT OUTER JOIN weighted_matches wm
+               ON wm.establecimiento_id = e.id AND wm.score >= 0.95
+            GROUP BY da.provincia
+            ORDER BY provincia """
+
+    return flask.Response(flask.json.dumps(list(db.query(q))),
+                          mimetype='application/json')
+
 @app.route("/seccion/<int:distrito_id>/<int:seccion_id>")
 def seccion_info(distrito_id, seccion_id):
     q = """ SELECT *,
@@ -94,13 +115,13 @@ def seccion_info(distrito_id, seccion_id):
 
 @app.route("/establecimientos/<int:distrito_id>/<int:seccion_id>")
 def establecimientos_by_distrito_and_seccion(distrito_id, seccion_id):
-    q = """ SELECT e.id, e.establecimiento, e.localidad, e.circuito, count(wm.*) AS match_count
+    q = """ SELECT e.id, e.establecimiento, e.direccion, e.localidad, e.circuito, count(wm.*) AS match_count
             FROM establecimientos e
             LEFT OUTER JOIN weighted_matches wm
-               ON wm.establecimiento_id = e.id AND wm.score = 1
+               ON wm.establecimiento_id = e.id AND wm.score > 0.95
             WHERE dne_distrito_id = %d
               AND dne_seccion_id = %d
-            GROUP BY  e.id, e.establecimiento, e.localidad, e.circuito """ % (distrito_id, seccion_id)
+            GROUP BY e.id, e.establecimiento, e.direccion, e.localidad, e.circuito """ % (distrito_id, seccion_id)
 
     return flask.Response(flask.json.dumps(list(db.query(q))),
                           mimetype='application/json')
@@ -134,12 +155,22 @@ def matched_escuelas(establecimiento_id):
     return flask.Response(flask.json.dumps(r),
                           mimetype='application/json')
 
+@app.route("/places/<int:distrito_id>/<int:seccion_id>")
+def places_for_distrito_and_seccion(distrito_id, seccion_id):
+    """ Todos los places (escuelas) para este distrito y seccion """
+    q = """ SELECT esc.*
+            FROM escuelasutf8 esc
+            WHERE esc.dne_distrito_id = %d
+              AND esc.dne_seccion_id = %d """
+
+    return flask.Response(flask.json.dumps(list(db.query(q))),
+                          mimetype='application/json')
+
 @app.route('/matches/<int:establecimiento_id>/<int:place_id>',
            methods=['DELETE'])
 def match_delete(establecimiento_id, place_id):
     """ modificar los weighted_matches para un (establecimiento, escuela) """
     # borrar todos los matches humanos anteriores
-    print 'DELETE'
     q = DELETE_MATCHES_QUERY % (establecimiento_id, place_id)
     db.query(q)
     return flask.Response('')
