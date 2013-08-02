@@ -44,7 +44,7 @@ select#distrito {
 }
 
   #map {
-    height: 400px;
+    height:350px;
   }
 
 
@@ -99,8 +99,9 @@ tr.matches table {
   margin: 0 auto;
 }
 
-tr.matches tr {
-  cursor: default;
+tr.matches tr:hover,tr.matches tr.active {
+  cursor: pointer;
+  background-color: #fafafa;
 }
 
 .pac-container {
@@ -109,4 +110,10 @@ tr.matches tr {
 
 #provincia-ranking {
   font-size: 0.5em;
+  height: 330px;
+  overflow: scroll;
+  width: 200px;
+  list-style-type: none;
+  margin: 0; padding: 0;
 }
+

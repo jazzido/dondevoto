@@ -75,7 +75,7 @@
           </tr>
           <% }); %>
         </table>
-        Buscar lugares: <input type="text"> o <a href="#">Ver todas las escuelas en <%- seccion %>, <%- distrito %></a>
+        Buscar lugares: <input type="text"> o <a href="#" id="view-all-places">Ver todas las escuelas en <%- seccion %>, <%- distrito %></a>
       </td>
     </tr>
   </script>
@@ -86,15 +86,21 @@
       <span style="font-size: 0.9em">
         Dirección: <%- place.ndomiciio %> — Localidad: <%- place.localidad %><br>
         <%- place.provincia %>
+        <!-- input type="checkbox" class="infowindow-check" -->
       </span>
     </div>
   </script>
 
   <script type="text/template" id="completion-template">
-    <strong>¡Ya casi estamos!</strong>
+    <table>
     <% _.each(provincias, function(e) { %>
-    <li><strong><%- e.provincia %></strong>: <%- ((e.matches_count / e.estab_count) * 100).toFixed(2) %>%  (<%- e.matches_count %> de <%- e.estab_count %>)</li>
+    <tr>
+      <th style="text-align: right;"><%- e.provincia %></th>
+      <td><%- ((e.matches_count / e.estab_count) * 100).toFixed(2) %>%</td>
+      <td><%- e.matches_count %> de <%- e.estab_count %></td>
+    </tr>
     <% }); %>
+    </table>
   </script>
 
   <script type="text/javascript">

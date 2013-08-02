@@ -11,7 +11,7 @@ $(function(){
 
     map.addMapType("osm", {
         getTileUrl: function(coord, zoom) {
-            return "http://tile.openstreetmap.org/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
+            return "http://otile1.mqcdn.com/tiles/1.0.0/map/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
         },
         tileSize: new google.maps.Size(256, 256),
         name: "OpenStreetMap",
@@ -41,12 +41,18 @@ $(function(){
 
     var currentBounds = null;
     var currentMarker = null;
+    var currentPlace  = null;
+    var currentSeccion = null;
+    var currentDistrito = null;
 
-    completionRankingInterval = window.setInterval(function() {
+    var updateCompletion = function() {
         $.get('/completion', function(provincias) {
             $('#provincia-ranking').html(completion_tmpl({provincias:provincias}));
         })
-    }, 5000);
+    };
+
+    completionRankingInterval = window.setInterval(updateCompletion, 5000);
+    updateCompletion();
 
     $('select#distrito').on('change', function() {
         var p_d = $(this).val().split('-');
@@ -57,7 +63,10 @@ $(function(){
               });
 
         map.removeMarkers(markers);
-        markers = []
+        markers = [];
+
+        currentSeccion = p_d[1];
+        currentDistrito = p_d[0];
 
         $.get('/seccion/' + p_d.join('/'), function(data) {
             currentBounds = data.bounds.coordinates[0].map(function(p) {
@@ -84,22 +93,33 @@ $(function(){
         console.log(e);
     };
 
+    // $(document).on({
+    //     'change': function(e) { // click en en el chkbox del infowindow
+    //         console.log(currentPlace);
+
+
+    //     }
+    // }, 'input.infowindow-check');
+
     $(document).on({
-        'mouseover': function() {
+        'click': function() {
             if (currentMarker) {
                 currentMarker.infoWindow.close();
             }
             var d = $(this).data('place');
+            currentPlace = d;
             currentMarker = _.find(map.markers, function(m) {
                 return m.details == d;
             });
+
             currentMarker.infoWindow.open(map, currentMarker);
         },
-        'mouseout': function() {
-
-        },
         'dblclick': function() {
-            console.log(currentMarker);
+            maxZoomService.getMaxZoomAtLatLng(currentMarker.getPosition(), function(r) {
+                if (r.status == google.maps.MaxZoomStatus.OK)
+                    map.setZoom(r.zoom);
+                map.map.panTo(currentMarker.getPosition());
+            });
         }
     }, 'tr.matches tr')
 
@@ -114,11 +134,11 @@ $(function(){
             var establecimiento = establecimiento_tr
                 .data('establecimiento-id');
 
-            var place = chk
+            currentPlace = chk
                 .parents('tr:not(.matches)')
                 .data('place');
 
-            var url = '/matches/' + establecimiento + '/' + place.ogc_fid;
+            var url = '/matches/' + establecimiento + '/' + currentPlace.ogc_fid;
 
             if (chk.is(':checked')) {
                 establecimiento_tr.addClass('matched');
@@ -135,14 +155,49 @@ $(function(){
         },
     }, 'tr.matches tr input[type=checkbox]')
 
+    $(document).on({
+        'click': function(e) {
+            var a = $(this);
+            var tr = a.parents('tr.matches');
+            var prev = tr.prev();
+            $.get('/places/' + currentDistrito + '/' + currentSeccion,
+                  { direccion: $('td:nth-child(3)', tr).html() },
+                  function(data) {
+                      tr.remove();
+                      prev.after(matches_tmpl({
+                          matches: data,
+                          seccion: '',
+                          distrito: ''
+                      }));
+                      $('tr', prev.next()).each(function(i, t) {
+                          $(this).data('place', data[i]);
+                      });
+                      map.removeMarkers(markers);
+                      markers = []
+                      data.forEach(function(m) {
+                          var marker = map.addMarker({
+                              lat: m.geojson.coordinates[1],
+                              lng: m.geojson.coordinates[0],
+                              details: m,
+                              infoWindow: {
+                                  content: infowindow_tmpl({place: m})
+                              },
+                              click: showMarker,
+                          });
+                          markers.push(marker);
+                      });
+                      if (markers.length > 0) map.fitZoom();
+                  });
+            e.preventDefault();
+            return false;
+        }
+    }, 'a#view-all-places')
+
 
     $(document).on(
         {
             // click en establecimiento, abre los matches
             'click': function() {
-
-                // saco el poligono, para que no me capture el puto rightclick
-//                map.removePolygon(polygon);
                 $('tr', $(this).parent()).removeClass('active');
                 $('tr.matches').remove();
                 var tr = $(this);
@@ -150,7 +205,6 @@ $(function(){
                 var eid = $(this).data('establecimiento-id');
                 $.get('/matches/' + eid,
                       function(data) {
-
                           // todo este quilombo es para sacar los duplicados que vienen del join
                           data =
                               _.sortBy(
@@ -169,7 +223,6 @@ $(function(){
                                   function(d) {
                                       return -d.score;
                                   });
-
 
                           tr.after(matches_tmpl({
                               matches: data,

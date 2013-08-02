@@ -1,12 +1,13 @@
 # coding: utf-8
 from collections import OrderedDict
-import simplejson
 
+import os
 import dataset
 import flask
-from flask import Flask, render_template, jsonify, abort
+from flask import Flask, render_template, jsonify, abort, request
 from werkzeug import Request
 from wsgiauth import basic
+import simplejson
 
 # Umbral para considerar válidas a los matches calculados por el algoritmo
 MATCH_THRESHOLD = 0.95
@@ -33,7 +34,7 @@ class MethodRewriteMiddleware(object):
 
 def authfunc(env, username, password):
     # TODO guardar username en env, para guardar el autor de los matches
-    return password == 'dondevoto'
+    return password == os.environ('DONDEVOTO_PASSWORD', 'dondevoto')
 
 app = Flask(__name__)
 app.wsgi_app = basic.basic('dondevoto', authfunc)(MethodRewriteMiddleware(app.wsgi_app))
@@ -158,12 +159,22 @@ def matched_escuelas(establecimiento_id):
 @app.route("/places/<int:distrito_id>/<int:seccion_id>")
 def places_for_distrito_and_seccion(distrito_id, seccion_id):
     """ Todos los places (escuelas) para este distrito y seccion """
-    q = """ SELECT esc.*
+    q = """ SELECT esc.*,
+                   st_asgeojson(wkb_geometry_4326) AS geojson,
+                   similarity(ndomiciio, '%s') as sim
             FROM escuelasutf8 esc
-            WHERE esc.dne_distrito_id = %d
-              AND esc.dne_seccion_id = %d """
+            INNER JOIN divisiones_administrativas da
+            ON st_within(esc.wkb_geometry_4326, da.wkb_geometry)
+            WHERE da.dne_distrito_id = %d
+              AND da.dne_seccion_id = %d
+            ORDER BY sim DESC """ % (request.args.get('direccion').replace("'", "''"),
+                                     distrito_id,
+                                     seccion_id)
 
-    return flask.Response(flask.json.dumps(list(db.query(q))),
+    r = [dict(e.items() + [('geojson',simplejson.loads(e['geojson']))])
+         for e in db.query(q)]
+
+    return flask.Response(flask.json.dumps(r),
                           mimetype='application/json')
 
 @app.route('/matches/<int:establecimiento_id>/<int:place_id>',
