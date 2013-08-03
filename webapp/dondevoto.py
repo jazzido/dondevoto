@@ -122,7 +122,8 @@ def establecimientos_by_distrito_and_seccion(distrito_id, seccion_id):
                ON wm.establecimiento_id = e.id AND wm.score > 0.95
             WHERE dne_distrito_id = %d
               AND dne_seccion_id = %d
-            GROUP BY e.id, e.establecimiento, e.direccion, e.localidad, e.circuito """ % (distrito_id, seccion_id)
+            GROUP BY e.id, e.establecimiento, e.direccion, e.localidad, e.circuito
+            ORDER BY e.circuito """ % (distrito_id, seccion_id)
 
     return flask.Response(flask.json.dumps(list(db.query(q))),
                           mimetype='application/json')
@@ -167,9 +168,10 @@ def places_for_distrito_and_seccion(distrito_id, seccion_id):
             ON st_within(esc.wkb_geometry_4326, da.wkb_geometry)
             WHERE da.dne_distrito_id = %d
               AND da.dne_seccion_id = %d
-            ORDER BY sim DESC """ % (request.args.get('direccion').replace("'", "''"),
-                                     distrito_id,
-                                     seccion_id)
+            ORDER BY sim DESC
+            LIMIT 15 """ % (request.args.get('direccion').replace("'", "''"),
+                            distrito_id,
+                            seccion_id)
 
     r = [dict(e.items() + [('geojson',simplejson.loads(e['geojson']))])
          for e in db.query(q)]
