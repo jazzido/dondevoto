@@ -139,7 +139,7 @@ def matched_escuelas(establecimiento_id):
        wm.establecimiento_id,
        esc.*,
        st_asgeojson(wkb_geometry_4326) AS geojson,
-       (CASE WHEN wm.match_source = 1 THEN 1
+       (CASE WHEN wm.match_source >= 1 THEN 1
              WHEN wm.score > %f AND wm.match_source = 0 THEN 1
              ELSE 0
         END) AS is_match
