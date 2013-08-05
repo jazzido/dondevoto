@@ -320,7 +320,7 @@ var GMaps = (function(global) {
 
       ul.id = 'gmaps_context_menu';
       ul.style.display = 'none';
-      ul.style.position = 'absolute';
+      ul.style.position = 'fixed';
       ul.style.minWidth = '100px';
       ul.style.background = 'white';
       ul.style.listStyle = 'none';

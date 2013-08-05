@@ -6,6 +6,7 @@ import dataset
 from geopy.geocoders.googlev3 import GoogleV3
 
 POINT_RE = r'^POINT\((-?[\d\.]+) (-?[\d\.]+)\)$'
+ADDRESS_RE = r'([a-zA-Z\s\.]+\s*\d+)'
 
 db = dataset.connect('postgresql://manuel@localhost:5432/mapa_paso')
 
@@ -33,8 +34,14 @@ def geocode_establecimiento(establecimiento, max_distance=20, ciudad=None):
     bounds['sw'] = re.match(POINT_RE, bounds['sw']).groups()
     bounds['ne'] = re.match(POINT_RE, bounds['ne']).groups()
 
+    addr = re.match(ADDRESS_RE, establecimiento['direccion'])
+    if addr is None:
+        return None
+
+    direccion = addr.groups()[0]
+
     try:
-        geocoded = geocoder.geocode("%s, %s, Argentina" % (establecimiento['direccion'],
+        geocoded = geocoder.geocode("%s, %s, Argentina" % (direccion,
                                                            ciudad if ciudad is not None else establecimiento['localidad']),
                                     bounds="%s,%s|%s,%s" % (bounds['sw'][1], bounds['sw'][0],bounds['ne'][1], bounds['ne'][0]),
                                     exactly_one=True,
@@ -55,7 +62,7 @@ def geocode_establecimiento(establecimiento, max_distance=20, ciudad=None):
                                AND da.dne_distrito_id = %s))
               AND st_distance(st_geographyfromtext('SRID=4326;' || st_astext(wkb_geometry_4326)),
                               st_geographyfromtext('SRID=4326;POINT(%s %s)')) <= %f
-              AND similarity(nombre, '%s') > 0.5
+              -- AND similarity(nombre, '%s') > 0.4
         """ % (geocoded[1][1],
                geocoded[1][0],
                establecimiento['dne_seccion_id'],
