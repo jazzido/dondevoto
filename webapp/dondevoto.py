@@ -238,10 +238,17 @@ def create_place():
 
     q = """
     INSERT INTO escuelasutf8 (nombre, ndomiciio, localidad, wkb_geometry_4326)
-    VALUES ('')
-    """
-    print request.form
-    return flask.Response('')
+    VALUES ('%s', '%s', '%s', '%s')
+    RETURNING ogc_fid
+    """ % (
+        request.form['nombre'].replace("'", "''"),
+        request.form['ndomiciio'].replace("'", "''"),
+        request.form['localidad'].replace("'", "''"),
+        request.form['wkb_geometry_4326']
+    )
+    r = db.query(q)
+    return flask.Response(flask.json.dumps(r.next()),
+                          mimetype="application/json")
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple

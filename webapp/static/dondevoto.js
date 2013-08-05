@@ -32,25 +32,32 @@ $(function(){
                     var c = $('td', tr).map(function(d,e) { return e.innerHTML; });
                     console.log(c);
                     $('tr.establecimiento.active + tr.matches td table').prepend(new_estab_tmpl({contents: c}));
+                    var place_data = {
+                        nombre: c[0],
+                        ndomiciio: c[1],
+                        localidad: c[2],
+                        wkb_geometry_4326: 'SRID=4326;POINT(' + lastRightClickedPoint.lng() + ' ' + lastRightClickedPoint.lat() + ')'
+                    };
                     $.post('/create',
-                           {
-                               nombre: c[0],
-                               ndomiciio: c[1],
-                               localidad: c[2],
-                               wkb_geometry_4326: 'SRID=4326;POINT(' + lastRightClickedPoint.lng() + ' ' + lastRightClickedPoint.lat() + ')'
-                             },
-                           function(e) {
-                               console.log(e);
+                           place_data,
+                           function(d) {
+                               place_data['ogc_fid'] = d['ogc_fid'];
+                               var new_tr = $('tr.establecimiento.active + tr.matches td table tr:first-child');
+                               new_tr.data('place', place_data);
+                               $('input[type=checkbox]', new_tr)
+                                   .prop('checked', true)
+                                   .trigger('change');
                            });
                 }
             },
-            {
-                title: 'Escuelas en esta área',
-                name:  'escuelas_viewport',
-                action: function(e) {
+            // {
+            //     title: 'Escuelas en esta área',
+            //     name:  'escuelas_viewport',
+            //     action: function(e) {
 
-                }
-            }]
+            //     }
+            // }
+        ]
     });
 
     var table_tmpl = _.template($('#establecimientos-template').html());
@@ -78,8 +85,8 @@ $(function(){
         })
     };
 
-/*    completionRankingInterval = window.setInterval(updateCompletion, 10000);
-    updateCompletion();*/
+    completionRankingInterval = window.setInterval(updateCompletion, 10000);
+    updateCompletion();
 
     var addGeocomplete = function(selector) {
         $(selector)
