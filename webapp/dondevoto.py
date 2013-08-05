@@ -159,7 +159,7 @@ def matched_escuelas(establecimiento_id):
        INNER JOIN establecimientos e ON e.id = wm.establecimiento_id
        INNER JOIN escuelasutf8 esc ON esc.ogc_fid = wm.escuela_id
        WHERE wm.establecimiento_id = %d
-         AND esc.estado = 'Activo'
+--         AND esc.estado = 'Activo'
        ORDER BY wm.score DESC
        """ % (MATCH_THRESHOLD, establecimiento_id)
 
