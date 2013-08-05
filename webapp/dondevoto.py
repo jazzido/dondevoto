@@ -76,17 +76,22 @@ def provincias_distritos():
         k = (d['dne_distrito_id'], d['provincia'],)
         if k not in rv:
             rv[k] = []
-        rv[k].append((d['dne_seccion_id'],
-                      d['departamento'],
-                      d['estab_count'],
-                      d['matches_count']))
+        rv[k].append((
+            d['dne_distrito_id'],
+            d['dne_seccion_id'],
+            d['departamento'],
+            d['estab_count'],
+            d['matches_count']))
 
     return rv
 
 @app.route("/")
-def index():
+@app.route("/<int:dne_distrito_id>/<int:dne_seccion_id>")
+def index(dne_distrito_id=None, dne_seccion_id=None):
     return render_template('index.html',
-                           provincias_distritos=provincias_distritos())
+                           provincias_distritos=provincias_distritos(),
+                           dne_distrito_id=dne_distrito_id,
+                           dne_seccion_id=dne_seccion_id)
 
 @app.route("/completion")
 def completion():
@@ -230,12 +235,14 @@ def match_create(establecimiento_id, place_id):
 @app.route('/create', methods=['POST'])
 def create_place():
     """ crea un nuevo lugar (una 'escuela') """
+
     q = """
     INSERT INTO escuelasutf8 (nombre, ndomiciio, localidad, wkb_geometry_4326)
+    VALUES ('')
     """
     print request.form
     return flask.Response('')
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
-    run_simple('localhost', 8000, app)
+    run_simple('localhost', 8000, app, use_reloader=True)

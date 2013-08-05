@@ -37,7 +37,7 @@ $(function(){
                                nombre: c[0],
                                ndomiciio: c[1],
                                localidad: c[2],
-                               wkb_geometry_4326: 'SRID=4326;POINT('+lastRightClickedPoint.lng() + ' ' + lastRightClickedPoint.lat() + ')';
+                               wkb_geometry_4326: 'SRID=4326;POINT(' + lastRightClickedPoint.lng() + ' ' + lastRightClickedPoint.lat() + ')'
                              },
                            function(e) {
                                console.log(e);
@@ -81,8 +81,27 @@ $(function(){
 /*    completionRankingInterval = window.setInterval(updateCompletion, 10000);
     updateCompletion();*/
 
+    var addGeocomplete = function(selector) {
+        $(selector)
+            .geocomplete({ bounds: polygon.getBounds() })
+            .bind("geocode:result", function(event, result) {
+                if (!polygon.getBounds().contains(result.geometry.location))
+                    // no salir de los bounds actuales si el geocoder
+                    // retorna algo afuera de esos bounds
+                    return;
+                maxZoomService.getMaxZoomAtLatLng(result.geometry.location, function(r) {
+                    if (r.status == google.maps.MaxZoomStatus.OK)
+                        map.setZoom(r.zoom);
+                    map.map.panTo(result.geometry.location);
+                });
+
+            });
+    };
+
     $('select#distrito').on('change', function() {
         var p_d = $(this).val().split('-');
+        history.pushState({foo: null}, "", "/" + p_d[0] + "/" + p_d[1]);
+        console.log("/" + p_d[0] + "/" + p_d[1]);
         $.get('/establecimientos/' + p_d.join('/'),
               function(data) {
                   $('table#establecimientos')
@@ -120,13 +139,6 @@ $(function(){
         console.log(e);
     };
 
-    // $(document).on({
-    //     'change': function(e) { // click en en el chkbox del infowindow
-    //         console.log(currentPlace);
-
-
-    //     }
-    // }, 'input.infowindow-check');
 
     $(document).on({
         'click': function() {
@@ -215,6 +227,7 @@ $(function(){
                       });
                       if (markers.length > 0) map.fitZoom();
                   });
+            addGeocomplete($('input[type=text]', $($(prev).next())));
             e.preventDefault();
             return false;
         }
@@ -279,21 +292,7 @@ $(function(){
                           });
                           if (markers.length > 0) map.fitZoom();
 
-                          // Agrego el geocomplete
-                          $('input[type=text]', tr.next())
-                              .geocomplete({ bounds: polygon.getBounds() })
-                              .bind("geocode:result", function(event, result) {
-                                  if (!polygon.getBounds().contains(result.geometry.location))
-                                      // no salir de los bounds actuales si el geocoder
-                                      // retorna algo afuera de esos bounds
-                                      return;
-                                  maxZoomService.getMaxZoomAtLatLng(result.geometry.location, function(r) {
-                                      if (r.status == google.maps.MaxZoomStatus.OK)
-                                          map.setZoom(r.zoom);
-                                      map.map.panTo(result.geometry.location);
-                                  });
-
-                              });
+                          addGeocomplete($('input[type=text]', tr.next()));
                       });
             }
         }, 'table#establecimientos tr.establecimiento');
@@ -306,5 +305,7 @@ $(function(){
     $(document).on("ajaxComplete", function(e, xhr, settings, exception)  {
         $('#loading').css('visibility', 'hidden');
     });
+
+    $('select#distrito').trigger('change');
 
 });
