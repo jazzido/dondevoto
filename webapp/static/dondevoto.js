@@ -6,6 +6,9 @@ $(function(){
         mapType: google.maps.MapTypeId.HYBRID,
         mapTypeControlOptions: {
             mapTypeIds : ["hybrid", "roadmap", "satellite", "terrain", "osm"]
+        },
+        rightclick: function(e) {
+            lastRightClickedPoint = e.latLng;
         }
     });
 
@@ -20,19 +23,42 @@ $(function(){
 
     map.setContextMenu({
         control: 'map',
-        options: [{
-            title: 'Agregar centro de votación aquí',
-            name: 'agregar_lugar',
-            action: function(e) {
+        options: [
+            {
+                title: 'Crear centro de votación aquí',
+                name: 'agregar_lugar',
+                action: function(e) {
+                    var tr = $('tr.establecimiento.active');
+                    var c = $('td', tr).map(function(d,e) { return e.innerHTML; });
+                    console.log(c);
+                    $('tr.establecimiento.active + tr.matches td table').prepend(new_estab_tmpl({contents: c}));
+                    $.post('/create',
+                           {
+                               nombre: c[0],
+                               ndomiciio: c[1],
+                               localidad: c[2],
+                               wkb_geometry_4326: 'SRID=4326;POINT('+lastRightClickedPoint.lng() + ' ' + lastRightClickedPoint.lat() + ')';
+                             },
+                           function(e) {
+                               console.log(e);
+                           });
+                }
+            },
+            {
+                title: 'Escuelas en esta área',
+                name:  'escuelas_viewport',
+                action: function(e) {
 
-            }
-        }]
+                }
+            }]
     });
 
     var table_tmpl = _.template($('#establecimientos-template').html());
     var matches_tmpl = _.template($('#matches-template').html());
     var infowindow_tmpl = _.template($('#infowindow-template').html());
     var completion_tmpl = _.template($('#completion-template').html());
+    var new_estab_tmpl = _.template($('#new-establecimiento-template').html());
+
 
     var polygon = null;
     var markers = [];
@@ -44,6 +70,7 @@ $(function(){
     var currentPlace  = null;
     var currentSeccion = null;
     var currentDistrito = null;
+    var lastRightClickedPoint = null; // punto en el que se rightclickeo por ultima vez
 
     var updateCompletion = function() {
         $.get('/completion', function(provincias) {
@@ -51,8 +78,8 @@ $(function(){
         })
     };
 
-    completionRankingInterval = window.setInterval(updateCompletion, 5000);
-    updateCompletion();
+/*    completionRankingInterval = window.setInterval(updateCompletion, 10000);
+    updateCompletion();*/
 
     $('select#distrito').on('change', function() {
         var p_d = $(this).val().split('-');

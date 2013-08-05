@@ -17,17 +17,24 @@ DELETE_MATCHES_QUERY = """ DELETE
                              AND escuela_id = %d
                              AND match_source = 1 """
 
-class MethodRewriteMiddleware(object):
-    def __init__(self, app, input_name='_method'):
+from werkzeug.formparser import parse_form_data
+from werkzeug.wsgi import get_input_stream
+from io import BytesIO
+
+class MethodMiddleware(object):
+    """Don't actually do this. The disadvantages are not worth it."""
+    def __init__(self, app):
         self.app = app
-        self.input_name = input_name
 
     def __call__(self, environ, start_response):
-        request = Request(environ)
-        if self.input_name in request.form:
-            method = request.form[self.input_name].upper()
+        if environ['REQUEST_METHOD'].upper() == 'POST':
+            environ['wsgi.input'] = stream = \
+                BytesIO(get_input_stream(environ).read())
+            formdata = parse_form_data(environ)[1]
+            stream.seek(0)
 
-            if method in ['GET', 'POST', 'PUT', 'DELETE']:
+            method = formdata.get('_method', '').upper()
+            if method in ('GET', 'POST', 'PUT', 'DELETE'):
                 environ['REQUEST_METHOD'] = method
 
         return self.app(environ, start_response)
@@ -37,7 +44,7 @@ def authfunc(env, username, password):
     return password == os.environ.get('DONDEVOTO_PASSWORD', 'dondevoto')
 
 app = Flask(__name__)
-app.wsgi_app = basic.basic('dondevoto', authfunc)(MethodRewriteMiddleware(app.wsgi_app))
+app.wsgi_app = basic.basic('dondevoto', authfunc)(MethodMiddleware(app.wsgi_app))
 
 db = dataset.connect('postgresql://manuel@localhost:5432/mapa_paso')
 
@@ -219,3 +226,16 @@ def match_create(establecimiento_id, place_id):
     })
 
     return flask.Response('')
+
+@app.route('/create', methods=['POST'])
+def create_place():
+    """ crea un nuevo lugar (una 'escuela') """
+    q = """
+    INSERT INTO escuelasutf8 (nombre, ndomiciio, localidad, wkb_geometry_4326)
+    """
+    print request.form
+    return flask.Response('')
+
+if __name__ == '__main__':
+    from werkzeug.serving import run_simple
+    run_simple('localhost', 8000, app)

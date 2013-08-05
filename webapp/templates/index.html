@@ -61,6 +61,15 @@
       </tbody>
   </script>
 
+  <script type="text/template" id="new-establecimiento-template">
+    <tr>
+    <td><input type="checkbox"></td>
+    <% _.each(contents, function(e) { %>
+    <td><%- e %></td>
+    <% }); %>
+    </tr>
+  </script>
+
   <script type="text/template" id="matches-template">
     <tr class="matches">
       <td colspan="5">

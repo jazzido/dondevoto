@@ -50,7 +50,7 @@ def geocode_establecimiento(establecimiento, max_distance=20, ciudad=None):
         print >>sys.stderr, "EXECPTION: %s" % sys.exc_info()[0]
         return None
 
-    # escuelas cerca del resultado geocodeado, cuyo nombre se parece al establecimiento de votacion
+    # escuelas cerca del resultado geocodeado
     q = """ SELECT *,
             st_distance(st_geographyfromtext('SRID=4326;' || st_astext(wkb_geometry_4326)),
                         st_geographyfromtext('SRID=4326;POINT(%s %s)')) AS dist
