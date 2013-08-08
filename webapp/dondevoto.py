@@ -1,10 +1,12 @@
 # coding: utf-8
 from collections import OrderedDict
+from subprocess import call
+import zipfile, tempfile
 
 import os
 import dataset
 import flask
-from flask import Flask, render_template, jsonify, abort, request
+from flask import Flask, render_template, jsonify, abort, request, send_file
 from werkzeug import Request
 from wsgiauth import basic
 import simplejson
@@ -20,6 +22,14 @@ DELETE_MATCHES_QUERY = """ DELETE
 from werkzeug.formparser import parse_form_data
 from werkzeug.wsgi import get_input_stream
 from io import BytesIO
+
+OGR2OGR_PATH = os.environ.get('OGR2OGR_PATH', '/Applications/Postgres.app/Contents/MacOS/bin/ogr2ogr')
+GDAL_DATA = os.environ.get('GDAL_DATA', '/Applications/Postgres.app/Contents/MacOS/share/gdal/')
+
+def zipdir(path, zip):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            zip.write(os.path.join(root, file), arcname=file)
 
 class MethodMiddleware(object):
     """Don't actually do this. The disadvantages are not worth it."""
@@ -113,8 +123,8 @@ def completion():
 @app.route("/seccion/<int:distrito_id>/<int:seccion_id>")
 def seccion_info(distrito_id, seccion_id):
     q = """ SELECT *,
-                   st_asgeojson(st_setsrid(wkb_geometry, 900913)) AS geojson,
-                   st_asgeojson(st_envelope(wkb_geometry)) AS bounds
+                   st_asgeojson(st_transform(wkb_geometry, 4326)) AS geojson,
+                   st_asgeojson(st_envelope(st_setsrid(wkb_geometry, 900913))) AS bounds
             FROM divisiones_administrativas
             WHERE dne_distrito_id = %d
               AND dne_seccion_id = %d """ % (distrito_id, seccion_id)
@@ -249,6 +259,62 @@ def create_place():
     r = db.query(q)
     return flask.Response(flask.json.dumps(r.next()),
                           mimetype="application/json")
+
+@app.route('/shape/<int:dne_distrito_id>')
+@app.route('/shape/<int:dne_distrito_id>/<int:dne_seccion_id>')
+def get_shapefile(dne_distrito_id, dne_seccion_id=None):
+    q_no_seccion = """
+                  SELECT distinct(e.*),
+                         esc.wkb_geometry_4326,
+                         wm.score
+                  FROM establecimientos e
+                  INNER JOIN weighted_matches wm ON wm.establecimiento_id = e.id
+                  INNER JOIN escuelasutf8 esc ON wm.escuela_id = esc.ogc_fid
+                  WHERE e.dne_distrito_id = %s
+                    AND (wm.match_source >= 1
+                         OR (wm.match_source = 0
+                             AND wm.score >= 0.95))
+                  ORDER BY e.circuito, wm.score
+                  """
+
+    q_seccion = """
+                  SELECT distinct(e.*),
+                         esc.wkb_geometry_4326,
+                         wm.score
+                  FROM establecimientos e
+                  INNER JOIN weighted_matches wm ON wm.establecimiento_id = e.id
+                  INNER JOIN escuelasutf8 esc ON wm.escuela_id = esc.ogc_fid
+                  WHERE e.dne_distrito_id = %s
+                    AND e.dne_seccion_id = %d
+                    AND (wm.match_source >= 1
+                         OR (wm.match_source = 0
+                             AND wm.score >= 0.95))
+                  ORDER BY e.circuito, wm.score
+                  """
+
+    if dne_seccion_id is not None:
+        q = q_seccion % (dne_distrito_id, dne_seccion_id)
+    else:
+        q = q_no_seccion % (dne_distrito_id)
+        dne_seccion_id = 0
+
+    tmp_dir = tempfile.mkdtemp()
+
+    os.environ['GDAL_DATA'] = GDAL_DATA
+    # ojo con el injection aca. Si lo usas en algun lado, fijate que onda.
+    call("%s -f \"ESRI Shapefile\" -a_srs EPSG:4326 %s.shp PG:\"host=localhost user=manuel dbname=mapa_paso\" -sql \"%s\"" \
+         % (OGR2OGR_PATH,
+            os.path.join(tmp_dir, "%s-%s.shp" % (dne_distrito_id, dne_seccion_id)),
+            q),
+         shell=True)
+
+    zip_path = '/tmp/%s-%s.zip' % (dne_distrito_id, dne_seccion_id)
+    zip = zipfile.ZipFile(zip_path, 'w')
+    zipdir(tmp_dir, zip)
+    zip.close()
+
+    return send_file(zip_path, mimetype='application/zip', as_attachment=True)
+
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
