@@ -139,6 +139,9 @@ $(function(){
                 fillOpacity: 0.4,
                 clickable: false
             });
+
+            $('a#shapefile').attr('href', '/shape/' + p_d[0] + '/' + p_d[1]);
+
         });
     });
 
