@@ -93,6 +93,12 @@ def index(dne_distrito_id=None, dne_seccion_id=None):
                            dne_distrito_id=dne_distrito_id,
                            dne_seccion_id=dne_seccion_id)
 
+# los ST_Scale que hay por todos lados son efectivamente una grasada
+# pero las geometrias de divisiones administrativas no son buenas y a veces
+# algunas escuelas quedaban afuera del st_within
+# por eso, las agrando un poco antes de usuarlas como filtro :)
+
+
 @app.route("/completion")
 def completion():
     q = """ SELECT da.provincia,
@@ -113,8 +119,8 @@ def completion():
 @app.route("/seccion/<int:distrito_id>/<int:seccion_id>")
 def seccion_info(distrito_id, seccion_id):
     q = """ SELECT *,
-                   st_asgeojson(st_setsrid(wkb_geometry, 900913)) AS geojson,
-                   st_asgeojson(st_envelope(wkb_geometry)) AS bounds
+                   st_asgeojson(st_setsrid(ST_Translate(ST_Scale(wkb_geometry, 1.1, 1.1), ST_X(ST_Centroid(wkb_geometry))*(1 - 1.1), ST_Y(ST_Centroid(wkb_geometry))*(1 - 1.1) ), 900913)) AS geojson,
+                   st_asgeojson(st_envelope(ST_Translate(ST_Scale(wkb_geometry, 1.1, 1.1), ST_X(ST_Centroid(wkb_geometry))*(1 - 1.1), ST_Y(ST_Centroid(wkb_geometry))*(1 - 1.1) ))) AS bounds
             FROM divisiones_administrativas
             WHERE dne_distrito_id = %d
               AND dne_seccion_id = %d """ % (distrito_id, seccion_id)
@@ -177,7 +183,7 @@ def places_for_distrito_and_seccion(distrito_id, seccion_id):
                    similarity(ndomiciio, '%s') as sim
             FROM escuelasutf8 esc
             INNER JOIN divisiones_administrativas da
-            ON st_within(esc.wkb_geometry_4326, da.wkb_geometry)
+            ON st_within(esc.wkb_geometry_4326, ST_Translate(ST_Scale(da.wkb_geometry, 1.1, 1.1), ST_X(ST_Centroid(da.wkb_geometry))*(1 - 1.1), ST_Y(ST_Centroid(da.wkb_geometry))*(1 - 1.1) ))
             WHERE da.dne_distrito_id = %d
               AND da.dne_seccion_id = %d
             ORDER BY sim DESC
@@ -211,7 +217,7 @@ def match_create(establecimiento_id, place_id):
             FROM establecimientos e
             INNER JOIN divisiones_administrativas da ON e.dne_distrito_id = da.dne_distrito_id
             AND e.dne_seccion_id = da.dne_seccion_id
-            INNER JOIN escuelasutf8 esc ON st_within(esc.wkb_geometry_4326, da.wkb_geometry)
+            INNER JOIN escuelasutf8 esc ON st_within(esc.wkb_geometry_4326, ST_Translate(ST_Scale(da.wkb_geometry, 1.1, 1.1), ST_X(ST_Centroid(da.wkb_geometry))*(1 - 1.1), ST_Y(ST_Centroid(da.wkb_geometry))*(1 - 1.1) ))
             WHERE e.id = %d
               AND esc.ogc_fid = %d """ % (establecimiento_id, place_id)
 
